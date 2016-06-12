@@ -12,6 +12,10 @@
 @interface YSMotionUtility ()
 @property(nonatomic, strong) CMMotionManager *motionManager;
 @property(nonatomic, strong) NSOperationQueue *operationQueue;
+
+@property(nonatomic, assign) BOOL isShake;
+@property(nonatomic, assign) NSTimeInterval tempTime;
+@property(nonatomic, assign) BOOL isAction;
 @end
 
 @implementation YSMotionUtility
@@ -72,5 +76,19 @@
 
                                                  }];
     }
+}
+
+- (BOOL)jumpShakeWith:(CMAccelerometerData *)accelerometerData
+{
+    CGFloat x = accelerometerData.acceleration.x;
+    CGFloat y = accelerometerData.acceleration.y;
+    CGFloat z = accelerometerData.acceleration.z;
+
+    if (y > self.velocity)
+    {
+        return YES;
+    }
+
+    return NO;
 }
 @end
