@@ -12,6 +12,8 @@
 @interface YSMotionUtility ()
 @property(nonatomic, strong) CMMotionManager *motionManager;
 @property(nonatomic, strong) NSOperationQueue *operationQueue;
+@property(nonatomic,assign)BOOL isShake;
+@property(nonatomic,assign)BOOL isOver;
 @end
 
 @implementation YSMotionUtility
@@ -38,6 +40,19 @@
     return self;
 }
 
+
+- (instancetype) initWithtBlock:(motionBlock)block{
+
+    self = [self init];
+    if (self) {
+        
+        
+        self.block = block;
+    }
+    
+    return self;
+}
+
 - (void)initMotionManager
 {
     if (_motionManager == nil)
@@ -59,18 +74,55 @@
     {
         [self.motionManager setAccelerometerUpdateInterval:updateInterval];
 
-        [self.motionManager startAccelerometerUpdatesToQueue:[NSOperationQueue currentQueue]
+        [self.motionManager startAccelerometerUpdatesToQueue:self.operationQueue
                                                  withHandler:^(CMAccelerometerData *accelerometerData, NSError *error) {
 
-                                                     CGFloat x = accelerometerData.acceleration.x;
-                                                     CGFloat y = accelerometerData.acceleration.y;
-                                                     CGFloat z = accelerometerData.acceleration.z;
-                                                     if (y > self.velocity)
-                                                     {
-                                                         NSLog(@"---x:%f ---y:%f -----z:%f ", x, y, z);
+                                                     BOOL isShake = [self isShake:accelerometerData];
+                                                 
+                                                     if (isShake) {
+                                                     
+                                                         //处于摇一摇状态中
+                                                         self.isOver = NO;
+                                                         if (self.block) {
+                                                             
+                                                             BOOL isContinue = self.block();
+                                                             if (isContinue) {
+                                                                 
+                                                                 [self. motionManager startAccelerometerUpdates];
+                                                             }
+                                                         }
+                                                     } else {
+                                                     
+                                                        self.isOver = YES;
                                                      }
+                                                     
+                                                     if (self.isOver) {
+                                                         
+                                                         [self.motionManager stopAccelerometerUpdates];
+                                        
+                                                         // 取消队列中排队的其它请求
+                                                         [self.operationQueue cancelAllOperations];
+                                                         
+        
+                                                     }
+                                                     
+                                                     
 
                                                  }];
     }
+}
+
+- (BOOL)isShake:(CMAccelerometerData *)newestAccel {
+    
+    BOOL isShake = NO;
+    
+    // 三个方向任何一个方向的加速度大于1.5就认为是处于摇晃状态，当都小于1.5时认为摇奖结束。
+    if (ABS(newestAccel.acceleration.y) > self.velocity) {
+        
+        isShake = YES;
+        
+    }
+    return isShake;
+    
 }
 @end
